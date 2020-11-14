@@ -29,17 +29,19 @@
 
 include:
   - openssh
-{%- from "openssh/map.jinja" import openssh with context -%}
-{%- set openssh_pillar = pillar.get('openssh', {}) -%}
-{%- set auth = openssh_pillar.get('auth', {}) -%}
+{%- from "openssh/map.jinja" import mapdata with context -%}
+{%- set openssh = mapdata.openssh %}
+{%- set sshd_config = mapdata.sshd_config %}
+
+{%- set auth = openssh.get('auth', {}) -%}
 {%- for identifier,keys in auth.items() -%}
   {%- for key in keys -%}
     {% if 'present' in key and key['present'] %}
 {{ print_name(identifier, key) }}:
   ssh_auth.present:
     {{ print_ssh_auth(identifier, key) }}
-    {%- if 'sshd_config' in pillar and 'AuthorizedKeysFile' in pillar['sshd_config'] %}
-    - config: '{{ pillar['sshd_config']['AuthorizedKeysFile'] }}'
+    {%- if sshd_config.get("AuthorizedKeysFile", None) %}
+    - config: '{{ sshd_config['AuthorizedKeysFile'] }}'
     {% endif %}
     - require:
       - service: {{ openssh.service }}
@@ -47,8 +49,8 @@ include:
 {{ print_name(identifier, key) }}:
   ssh_auth.absent:
     {{ print_ssh_auth(identifier, key) }}
-    {%- if 'sshd_config' in pillar and 'AuthorizedKeysFile' in pillar['sshd_config'] %}
-    - config: '{{ pillar['sshd_config']['AuthorizedKeysFile'] }}'
+    {%- if sshd_config.get("AuthorizedKeysFile", None) %}
+    - config: '{{ sshd_config['AuthorizedKeysFile'] }}'
     {% endif -%}
     {%- endif -%}
   {%- endfor -%}
